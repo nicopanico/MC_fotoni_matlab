@@ -84,4 +84,4 @@ This repository contains MATLAB code for a **Monte Carlo simulation** of photon 
 - Parallel Computing Toolbox (optional, for `parfor` acceleration)
 
 ## Contact
-If you have any questions or suggestions, please feel free to contact me at [your-email@example.com].
+If you have any questions or suggestions, please feel free to contact me at [nicopanico@hotmail.it].
