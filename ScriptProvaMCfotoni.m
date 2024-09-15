@@ -378,7 +378,7 @@ end
 function [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(energia_elettrone, materiale)
     % Parametri del materiale (stopping power)
     % Si assume che il materiale contenga un campo chiamato 'stopping_power'
-    stopping_power = materiale.stopping_power;  % Energia persa per unità di distanza (MeV/cm)
+    stopping_power = ottieni_stopping_power(materiale, energia);  % Energia persa per unità di distanza (MeV/cm)
 
     % Simula la distanza percorsa dall'elettrone (cammino libero medio)
     distanza_percorsa = -log(rand) / stopping_power;
