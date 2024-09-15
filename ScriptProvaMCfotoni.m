@@ -19,7 +19,7 @@ radiazione(3).interazioni = {'scattering_elastico', 'cattura'};
 % Selezione del tipo di radiazione per la simulazione
 tipo_radiazione_selezionato = radiazione(1);  % Ad esempio, fotone
 
-
+addpath("C:\Users\nicop\OneDrive\Desktop\MC_matlab_fotoni"); % Aggiunto un path con i dati per i coefficienti di assorbimento
 
 %% Parametri del volume
 grid_size = [100, 100, 100];  % Dimensioni della griglia 3D
