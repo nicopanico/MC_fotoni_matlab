@@ -74,12 +74,7 @@ mu_pair_production_tab = dati{:,4};  % Coefficiente di produzione di coppie
 parfor i = 1:num_particelle
     % Energia iniziale
     energia = energie_iniziali(i);
-    % Inizializza la particella all'inizio del ciclo
-    particella = struct('tipo', 'fotone', 'energia', energie_iniziali(i), 'posizione', sorgente.posizione, 'direzione', [0, 0, 0]);
-
-    % Inizializza il materiale
-    materiale = material_grid(particella.posizione(1), particella.posizione(2), particella.posizione(3));
-
+    
     % Posizione iniziale (sorgente)
     posizione = sorgente.posizione;
 
@@ -190,7 +185,7 @@ parfor i = 1:num_particelle
                         positrone = struct('tipo', 'positrone', 'energia', energia_positrone, 'posizione', posizione, 'direzione', direzione_positrone);
 
                         % Aggiunta elettrone e positrone alla queue direttamente
-                        particelle_queue = [particelle_queue; elettrone; positrone];
+                        particelle_queue = [particelle_queue; elettrone, positrone];
                     else
                         energia = 0; % Il fotone viene assorbito completamente
                     end
