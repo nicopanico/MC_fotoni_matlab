@@ -34,7 +34,7 @@ sorgente.direzione = [0, 0, 1];  % Direzione preferenziale di emissione
 sorgente.spettro_energetico = @(N) rand(N,1) * (1.5 - 0.5) + 0.5;  % Energia tra 0.5 e 1.5 MeV
 
 % Numero di fotoni
-num_particelle = 1000;
+num_particelle = 10;
 
 % % Energia iniziale del fotone
 
@@ -288,19 +288,22 @@ for x = 1:grid_size(1)
 end
 
 %% Visualizzazione 3D di voxel con dose non nulla in Gray e scala di colori
-figure;
-[x, y, z] = ind2sub(size(dose_in_Gy_grid), find(dose_in_Gy_grid > 0));  % Trova i voxel con dose non nulla
-dose_values_Gy = dose_in_Gy_grid(dose_in_Gy_grid > 0);  % Dose corrispondente in Gy
 
-% Crea la scatter plot 3D con una scala di colori per la dose in Gy
-scatter3(x, y, z, 36, dose_values_Gy, 'filled');
-colorbar;  % Aggiungi la barra dei colori per indicare la dose in Gy
-colormap jet;  % Mappa di colori (puoi provare anche "hot" o "parula")
-xlabel('X');
-ylabel('Y');
-zlabel('Z');
-title('Distribuzione della Dose nei Voxel con Dose Non Nulla (in Gy)');
-axis equal;  % Mantiene la proporzione degli assi
+visualizza_dose(dose_grid, 0);  % 'dose_grid' è la griglia 3D della dose, e 0.1 è la soglia di dose
+
+% figure;
+% [x, y, z] = ind2sub(size(dose_in_Gy_grid), find(dose_in_Gy_grid > 0));  % Trova i voxel con dose non nulla
+% dose_values_Gy = dose_in_Gy_grid(dose_in_Gy_grid > 0);  % Dose corrispondente in Gy
+% 
+% % Crea la scatter plot 3D con una scala di colori per la dose in Gy
+% scatter3(x, y, z, 36, dose_values_Gy, 'filled');
+% colorbar;  % Aggiungi la barra dei colori per indicare la dose in Gy
+% colormap jet;  % Mappa di colori (puoi provare anche "hot" o "parula")
+% xlabel('X');
+% ylabel('Y');
+% zlabel('Z');
+% title('Distribuzione della Dose nei Voxel con Dose Non Nulla (in Gy)');
+% axis equal;  % Mantiene la proporzione degli assi
 
 %% Calcolo della dose totale e della dose media
 dose_totale = sum(dose_grid(:));  % Dose totale in MeV
