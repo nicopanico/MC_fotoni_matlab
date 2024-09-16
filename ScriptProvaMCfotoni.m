@@ -197,8 +197,12 @@ parfor i = 1:num_particelle
                 end
             end
         elseif strcmp(particella.tipo, 'elettrone')
+            materiale_idx = material_grid(posizione(1), posizione(2), posizione(3));
+            materiale = materiali(materiale_idx);
+
+            stopping_power = ottieni_stopping_power(particella.energia, materiali(materiale_idx).nome);
             % Simulazione di elettroni emessi (secondari)
-            [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(particella.energia, materiale);
+            [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(particella.energia, stopping_power);
             nuova_posizione = round(particella.posizione + distanza_percorsa * particella.direzione);
             % Controlla se la nuova posizione è fuori dalla griglia
             if particella_fuori_griglia(nuova_posizione, grid_size)
@@ -221,9 +225,14 @@ parfor i = 1:num_particelle
                 particelle_queue = [particelle_queue; particella];
             end
         elseif strcmp(particella.tipo, 'positrone')
+            materiale_idx = material_grid(posizione(1), posizione(2), posizione(3));
+            materiale = materiali(materiale_idx);
             soglia_annichilazione = 0.511;
             % Simula il trasporto del positrone usando la stessa logica
-            [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(particella.energia, materiale);  % Positrone si comporta come un elettrone
+            % elettrone
+            % Positrone si comporta come un elettrone
+            stopping_power = ottieni_stopping_power(particella.energia, materiali(materiale_idx).nome)
+            [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(particella.energia, stopping_power);  
             nuova_posizione = round(particella.posizione + distanza_percorsa * particella.direzione);
 
             % Controlla se la nuova posizione è fuori dalla griglia
@@ -380,10 +389,7 @@ function [mu_fotoelettrico, mu_compton, mu_pair_production] = coefficiente_atten
     mu_pair_production = interp1(energia_unica, mu_pair_production_unico, energia, 'linear', 'extrap');
 
 end
-function [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(energia_elettrone, materiale)
-    % Parametri del materiale (stopping power)
-    % Si assume che il materiale contenga un campo chiamato 'stopping_power'
-    stopping_power = ottieni_stopping_power(materiale, energia);  % Energia persa per unità di distanza (MeV/cm)
+function [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(energia_elettrone, stopping_power)
 
     % Simula la distanza percorsa dall'elettrone (cammino libero medio)
     distanza_percorsa = -log(rand) / stopping_power;
@@ -395,7 +401,7 @@ function [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(energi
     energia_elettrone = energia_elettrone - energia_depositata;
 end
 
-function stopping_power = ottieni_stopping_power(materiale, energia)
+function stopping_power = ottieni_stopping_power(energia, materiale)
     % Restituisce il potere frenante in MeV/cm in base al materiale e all'energia
     switch materiale
         case 'aria'
