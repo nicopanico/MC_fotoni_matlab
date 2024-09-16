@@ -1,58 +1,62 @@
-function visualizza_dose(dose_grid, dose_threshold)
-    % Function to visualize the accumulated dose in 3D and 2D sections
+function visualizza_dose(dose_grid, dose_threshold, show_slices)
+    % Function to visualize the accumulated dose in 3D and optionally in 2D slices
     % Input:
     %   dose_grid: 3D grid of the accumulated dose
     %   dose_threshold: dose threshold for isosurface visualization
+    %   show_slices: boolean value (true/false) to show or hide 2D slices
 
     % ---------------------------
-    % 3D Isosurface Visualization
+    % 3D Heatmap of the Dose Accumulation
     % ---------------------------
+    % Trova i voxel con dose non nulla
+    [x, y, z] = ind2sub(size(dose_grid), find(dose_grid > dose_threshold));
+    dose_values = dose_grid(dose_grid > dose_threshold);
+
+    % Visualizzazione Heatmap 3D
     figure;
-    p = patch(isosurface(dose_grid, dose_threshold));  % Generate the isosurface
-    isonormals(dose_grid, p);  % Add normals for better rendering
-    p.FaceColor = 'red';  % Color of the surface
-    p.EdgeColor = 'none';  % Remove the edges
-    daspect([1 1 1]);  % Keep axis proportions
-    view(3);  % Set the view to 3D
-    axis tight;  % Tighten the axis
-    camlight;  % Add light for better visualization
-    lighting gouraud;  % Set lighting style
-    title('Accumulated Dose Isosurface');
-    colorbar;  % Add a colorbar to represent dose values
+    scatter3(x, y, z, 36, dose_values, 'filled');  % Scatter plot 3D con colori per la dose
+    colorbar;  % Aggiunge una barra dei colori per rappresentare i livelli di dose
+    colormap jet;  % Usa 'jet' per blu -> rosso (blu bassa dose, rosso alta dose)
+    xlabel('X');
+    ylabel('Y');
+    zlabel('Z');
+    title('3D Heatmap della Dose Accumulata');
+    axis equal;  % Mantiene proporzioni uguali sugli assi
 
     % ---------------------------
-    % 2D Slice Visualization along X, Y, Z axes
+    % Optional 2D Slices
     % ---------------------------
-    figure;
-    subplot(1,3,1);
-    slice(dose_grid, size(dose_grid,1)/2, [], []);  % Slice along X axis
-    shading interp;
-    colormap jet;
-    colorbar;
-    title('2D Slice along X axis');
-    xlabel('X');
-    ylabel('Y');
-    zlabel('Z');
+    if show_slices
+        figure;
+        subplot(1,3,1);
+        slice(dose_grid, size(dose_grid,1)/2, [], []);  % Slice lungo X
+        shading interp;
+        colormap jet;  % Usa 'jet' anche per le sezioni 2D
+        colorbar;
+        title('Sezione 2D lungo Asse X');
+        xlabel('X');
+        ylabel('Y');
+        zlabel('Z');
 
-    subplot(1,3,2);
-    slice(dose_grid, [], size(dose_grid,2)/2, []);  % Slice along Y axis
-    shading interp;
-    colormap jet;
-    colorbar;
-    title('2D Slice along Y axis');
-    xlabel('X');
-    ylabel('Y');
-    zlabel('Z');
+        subplot(1,3,2);
+        slice(dose_grid, [], size(dose_grid,2)/2, []);  % Slice lungo Y
+        shading interp;
+        colormap jet;  % Usa 'jet' anche per le sezioni 2D
+        colorbar;
+        title('Sezione 2D lungo Asse Y');
+        xlabel('X');
+        ylabel('Y');
+        zlabel('Z');
 
-    subplot(1,3,3);
-    slice(dose_grid, [], [], size(dose_grid,3)/2);  % Slice along Z axis
-    shading interp;
-    colormap jet;
-    colorbar;
-    title('2D Slice along Z axis');
-    xlabel('X');
-    ylabel('Y');
-    zlabel('Z');
+        subplot(1,3,3);
+        slice(dose_grid, [], [], size(dose_grid,3)/2);  % Slice lungo Z
+        shading interp;
+        colormap jet;  % Usa 'jet' anche per le sezioni 2D
+        colorbar;
+        title('Sezione 2D lungo Asse Z');
+        xlabel('X');
+        ylabel('Y');
+        zlabel('Z');
+    end
 end
-
 
