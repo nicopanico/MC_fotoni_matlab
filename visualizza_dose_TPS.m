@@ -1,4 +1,4 @@
-function visualizza_TPS(dose_grid, dose_threshold, dose_unit)
+function visualizza_dose_TPS(dose_grid, dose_threshold, dose_unit)
     % Function to visualize the accumulated dose similar to TPS clinical systems
     % Input:
     %   dose_grid: 3D grid of the accumulated dose
@@ -100,4 +100,5 @@ function visualizza_TPS(dose_grid, dose_threshold, dose_unit)
     lighting gouraud;
     title(['3D Isosurface Log10 Dose in ', dose_unit]);
 end
+
 
