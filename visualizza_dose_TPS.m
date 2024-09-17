@@ -6,60 +6,87 @@ function visualizza_dose_TPS(dose_grid, dose_threshold, dose_unit)
     %   dose_unit: unit of dose (e.g., 'Gy')
 
     % ---------------------------
-    % 2D Slice Visualization (Similar to TPS)
+    % 2D Slice Visualization with Isodose Curves (TPS style)
     % ---------------------------
     figure;
     
-    % Definisci i livelli di isodose (per esempio, 10% fino a 100% della dose massima)
+    % Definisci i livelli di isodose (es. dal 10% fino al 100% della dose massima)
     max_dose = max(dose_grid(:));
     isodose_levels = max_dose * (0.1:0.1:1);  % Livelli dal 10% al 100%
 
-    % Slice lungo gli assi X, Y, Z con isodose
+    % Slice lungo gli assi X, Y, Z con curve isodose
     subplot(1,3,1);
-    imagesc(squeeze(dose_grid(:, :, round(size(dose_grid, 3) / 2))));  % Sezione trasversale Z
+    slice_Z = squeeze(dose_grid(:, :, round(size(dose_grid, 3) / 2)));  % Sezione Z
+    imagesc(log10(slice_Z + eps));  % Visualizza in scala logaritmica
     colormap jet;
     colorbar;
     hold on;
-    contour(squeeze(dose_grid(:, :, round(size(dose_grid, 3) / 2))), isodose_levels, 'LineColor', 'k');
+    % Aggiungi le curve di isodosi solo se la dose non è costante
+    if range(slice_Z(:)) > 0
+        contour(log10(slice_Z + eps), isodose_levels, 'LineColor', 'k');  % Visualizza le curve isodosi in scala logaritmica
+    end
     hold off;
-    title(['Slice lungo Z - Dose in ', dose_unit]);
+    title(['Slice Z - Log10 Dose in ', dose_unit]);
     xlabel('X');
     ylabel('Y');
     
     subplot(1,3,2);
-    imagesc(squeeze(dose_grid(:, round(size(dose_grid, 2) / 2), :)));  % Sezione trasversale Y
+    slice_Y = squeeze(dose_grid(:, round(size(dose_grid, 2) / 2), :));  % Sezione Y
+    imagesc(log10(slice_Y + eps));  % Scala logaritmica
     colormap jet;
     colorbar;
     hold on;
-    contour(squeeze(dose_grid(:, round(size(dose_grid, 2) / 2), :)), isodose_levels, 'LineColor', 'k');
+    if range(slice_Y(:)) > 0
+        contour(log10(slice_Y + eps), isodose_levels, 'LineColor', 'k');  % Visualizza le curve isodosi in scala logaritmica
+    end
     hold off;
-    title(['Slice lungo Y - Dose in ', dose_unit]);
+    title(['Slice Y - Log10 Dose in ', dose_unit]);
     xlabel('X');
     ylabel('Z');
     
     subplot(1,3,3);
-    imagesc(squeeze(dose_grid(round(size(dose_grid, 1) / 2), :, :)));  % Sezione trasversale X
+    slice_X = squeeze(dose_grid(round(size(dose_grid, 1) / 2), :, :));  % Sezione X
+    imagesc(log10(slice_X + eps));  % Scala logaritmica
     colormap jet;
     colorbar;
     hold on;
-    contour(squeeze(dose_grid(round(size(dose_grid, 1) / 2), :, :)), isodose_levels, 'LineColor', 'k');
+    if range(slice_X(:)) > 0
+        contour(log10(slice_X + eps), isodose_levels, 'LineColor', 'k');  % Visualizza le curve isodosi in scala logaritmica
+    end
     hold off;
-    title(['Slice lungo X - Dose in ', dose_unit]);
+    title(['Slice X - Log10 Dose in ', dose_unit]);
     xlabel('Y');
     ylabel('Z');
     
     % ---------------------------
-    % 3D Volume Rendering of the Dose (optional)
+    % 3D Isosurface Visualization with Heatmap Coloring
     % ---------------------------
     figure;
-    p = patch(isosurface(dose_grid, dose_threshold));
-    isonormals(dose_grid, p);
-    p.FaceColor = 'red';
-    p.EdgeColor = 'none';
+    
+    % Genera l'isosuperficie
+    [faces, verts] = isosurface(dose_grid, dose_threshold);
+    
+    % Interpolazione della dose sui vertici
+    vert_dose_values = interp3(dose_grid, verts(:,1), verts(:,2), verts(:,3), 'linear');
+    
+    % Usa scala logaritmica per la dose sui vertici
+    vert_dose_values_log = log10(vert_dose_values + eps);
+    
+    % Crea il patch dell'isosuperficie
+    p = patch('Faces', faces, 'Vertices', verts, 'FaceVertexCData', vert_dose_values_log, 'FaceColor', 'interp', 'EdgeColor', 'none');
+    
+    % Applica la colormap 'jet' per blu -> rosso
+    colormap jet;
+    
+    % Imposta i limiti della colorbar per la scala logaritmica
+    caxis([min(vert_dose_values_log), max(vert_dose_values_log)]);
+    
+    colorbar;
     daspect([1 1 1]);
     view(3);
     camlight;
     lighting gouraud;
-    colorbar;
-    title(['Isosuperficie della Dose in ', dose_unit]);
+    title(['3D Isosurface Log10 Dose in ', dose_unit]);
 end
+
+
