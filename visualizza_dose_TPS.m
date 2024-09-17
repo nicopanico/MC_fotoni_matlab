@@ -1,4 +1,4 @@
-function visualizza_dose_TPS(dose_grid, dose_threshold, dose_unit)
+function visualizza_TPS(dose_grid, dose_threshold, dose_unit)
     % Function to visualize the accumulated dose similar to TPS clinical systems
     % Input:
     %   dose_grid: 3D grid of the accumulated dose
@@ -6,7 +6,7 @@ function visualizza_dose_TPS(dose_grid, dose_threshold, dose_unit)
     %   dose_unit: unit of dose (e.g., 'Gy')
 
     % ---------------------------
-    % 2D Slice Visualization with Isodose Curves (TPS style)
+    % 2D Slice Visualization with Isodose Curves (TPS style, in scala lineare)
     % ---------------------------
     figure;
     
@@ -14,52 +14,52 @@ function visualizza_dose_TPS(dose_grid, dose_threshold, dose_unit)
     max_dose = max(dose_grid(:));
     isodose_levels = max_dose * (0.1:0.1:1);  % Livelli dal 10% al 100%
 
-    % Slice lungo gli assi X, Y, Z con curve isodose
+    % Slice lungo gli assi X, Y, Z con curve isodose in scala lineare
     subplot(1,3,1);
     slice_Z = squeeze(dose_grid(:, :, round(size(dose_grid, 3) / 2)));  % Sezione Z
-    imagesc(log10(slice_Z + eps));  % Visualizza in scala logaritmica
+    imagesc(slice_Z);  % Visualizzazione in scala lineare
     colormap jet;
     colorbar;
     hold on;
     % Aggiungi le curve di isodosi solo se la dose non è costante
     if range(slice_Z(:)) > 0
-        contour(log10(slice_Z + eps), isodose_levels, 'LineColor', 'k');  % Visualizza le curve isodosi in scala logaritmica
+        contour(slice_Z, isodose_levels, 'LineColor', 'k');  % Visualizza le curve isodosi in scala lineare
     end
     hold off;
-    title(['Slice Z - Log10 Dose in ', dose_unit]);
+    title(['Slice Z - Dose in ', dose_unit]);
     xlabel('X');
     ylabel('Y');
     
     subplot(1,3,2);
     slice_Y = squeeze(dose_grid(:, round(size(dose_grid, 2) / 2), :));  % Sezione Y
-    imagesc(log10(slice_Y + eps));  % Scala logaritmica
+    imagesc(slice_Y);  % Scala lineare
     colormap jet;
     colorbar;
     hold on;
     if range(slice_Y(:)) > 0
-        contour(log10(slice_Y + eps), isodose_levels, 'LineColor', 'k');  % Visualizza le curve isodosi in scala logaritmica
+        contour(slice_Y, isodose_levels, 'LineColor', 'k');  % Visualizza le curve isodosi in scala lineare
     end
     hold off;
-    title(['Slice Y - Log10 Dose in ', dose_unit]);
+    title(['Slice Y - Dose in ', dose_unit]);
     xlabel('X');
     ylabel('Z');
     
     subplot(1,3,3);
     slice_X = squeeze(dose_grid(round(size(dose_grid, 1) / 2), :, :));  % Sezione X
-    imagesc(log10(slice_X + eps));  % Scala logaritmica
+    imagesc(slice_X);  % Scala lineare
     colormap jet;
     colorbar;
     hold on;
     if range(slice_X(:)) > 0
-        contour(log10(slice_X + eps), isodose_levels, 'LineColor', 'k');  % Visualizza le curve isodosi in scala logaritmica
+        contour(slice_X, isodose_levels, 'LineColor', 'k');  % Visualizza le curve isodosi in scala lineare
     end
     hold off;
-    title(['Slice X - Log10 Dose in ', dose_unit]);
+    title(['Slice X - Dose in ', dose_unit]);
     xlabel('Y');
     ylabel('Z');
     
     % ---------------------------
-    % 3D Isosurface Visualization with Heatmap Coloring
+    % 3D Isosurface Visualization with Heatmap Coloring (in scala logaritmica)
     % ---------------------------
     figure;
     
@@ -72,14 +72,26 @@ function visualizza_dose_TPS(dose_grid, dose_threshold, dose_unit)
     % Usa scala logaritmica per la dose sui vertici
     vert_dose_values_log = log10(vert_dose_values + eps);
     
+    % Imposta i valori -Inf su un valore minimo accettabile
+    vert_dose_values_log(isinf(vert_dose_values_log)) = -20;  % Imposta un valore minimo per -Inf
+    
     % Crea il patch dell'isosuperficie
     p = patch('Faces', faces, 'Vertices', verts, 'FaceVertexCData', vert_dose_values_log, 'FaceColor', 'interp', 'EdgeColor', 'none');
     
     % Applica la colormap 'jet' per blu -> rosso
     colormap jet;
     
-    % Imposta i limiti della colorbar per la scala logaritmica
-    caxis([min(vert_dose_values_log), max(vert_dose_values_log)]);
+    % Controlla se i valori interpolati sono validi
+    min_dose = min(vert_dose_values_log);
+    max_dose = max(vert_dose_values_log);
+    
+    if max_dose > min_dose
+        % Imposta i limiti corretti per la colorbar, basati sulla dose effettiva
+        caxis([min_dose, max_dose]);
+    else
+        % Usa un fallback per evitare errori
+        caxis([0, 1]);  % Imposta un limite di default
+    end
     
     colorbar;
     daspect([1 1 1]);
@@ -88,5 +100,4 @@ function visualizza_dose_TPS(dose_grid, dose_threshold, dose_unit)
     lighting gouraud;
     title(['3D Isosurface Log10 Dose in ', dose_unit]);
 end
-
 
