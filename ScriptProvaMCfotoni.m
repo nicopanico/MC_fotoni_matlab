@@ -289,8 +289,8 @@ end
 
 %% Visualizzazione 3D di voxel con dose non nulla in Gray e scala di colori
 
-visualizza_dose(dose_in_Gy_grid, 0, false);  % 'dose_grid' è la griglia 3D della dose, e 0.1 è la soglia di dose
-
+% visualizza_dose(dose_in_Gy_grid, 0, false);  % 'dose_grid' è la griglia 3D della dose, e 0.1 è la soglia di dose
+visualizza_dose_TPS(dose_in_Gy_grid, 0, 'Gy');
 % figure;
 % [x, y, z] = ind2sub(size(dose_in_Gy_grid), find(dose_in_Gy_grid > 0));  % Trova i voxel con dose non nulla
 % dose_values_Gy = dose_in_Gy_grid(dose_in_Gy_grid > 0);  % Dose corrispondente in Gy
