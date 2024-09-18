@@ -28,17 +28,14 @@ voxel_size = 0.1;  % Dimensione del voxel in cm (spessore di ogni cella della gr
 
 %% Sorgente ed energia
 % Caratteristiche della sorgente
+sorgente = definisci_sorgente('gamma', 6, 0, 100);  % Sorgente gamma terapeutica
 sorgente.posizione = [50, 50, 1];  % Posizione della sorgente nella griglia
-sorgente.tipo = 'puntiforme';  % Tipi possibili: puntiforme, lineare, superficiale
+% sorgente.tipo = 'puntiforme';  % Tipi possibili: puntiforme, lineare, superficiale
 sorgente.direzione = [0, 0, 1];  % Direzione preferenziale di emissione
 sorgente.spettro_energetico = @(N) rand(N,1) * (1.5 - 0.5) + 0.5;  % Energia tra 0.5 e 1.5 MeV
 
 % Numero di fotoni
 num_particelle = 100;
-
-% % Energia iniziale del fotone
-
-% energia_iniziale = 1.25;  % in MeV
 % Energia iniziale delle particelle (campionata dallo spettro)
 
 energie_iniziali = sorgente.spettro_energetico(num_particelle);
