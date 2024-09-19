@@ -15,10 +15,12 @@ function sorgente = definisci_sorgente(tipo_sorgente, kVp_o_MV, mAs, distanza)
 
     if strcmp(tipo_sorgente, 'raggiX')
         % Applica modello spettro energetico per raggi X
-        sorgente.spettro = definisci_spettro_raggiX(kVp_o_MV);
+        spettro = definisci_spettro_raggiX(kVp_o_MV, false);  % false per non mostrare il grafico
+        sorgente.spettro_energetico = @(N) datasample(spettro.energia, N, 'Weights', spettro.intensita);
     elseif strcmp(tipo_sorgente, 'gamma')
         % Modello per raggi gamma terapeutici
-        sorgente.spettro = definisci_spettro_gamma(kVp_o_MV);
+        spettro = definisci_spettro_gamma(kVp_o_MV, false);
+        sorgente.spettro_energetico = @(N) datasample(spettro.energia, N, 'Weights', spettro.intensita);
     else
         error('Tipo di sorgente non supportato');
     end
