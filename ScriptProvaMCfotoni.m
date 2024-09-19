@@ -29,17 +29,14 @@ voxel_size = 0.1;  % Dimensione del voxel in cm (spessore di ogni cella della gr
 %% Sorgente ed energia
 % Caratteristiche della sorgente
 % Definizione della sorgente
-tipo_sorgente = 'gamma';   % 'raggiX' o 'gamma'
-energia_sorgente = 6;      % 6 MV per gamma terapeutica
-mAs = 0;                   % Usato solo per raggi X
-distanza = 100;            % Distanza dalla sorgente in cm
+tipo_radiazione = 'gamma';    % Può essere 'raggiX' o 'gamma'
+tipo_sorgente = 'puntiforme'; % Può essere 'puntiforme', 'lineare', 'superficiale'
+energia_sorgente = 6;         % 6 MV per gamma terapeutica
+mAs = 0;                      % Solo per raggi X
+distanza = 100;               % Distanza dalla sorgente in cm
 
 % Richiama la funzione per definire la sorgente
-sorgente = definisci_sorgente(tipo_sorgente, energia_sorgente, mAs, distanza);
-sorgente.posizione = [50, 50, 1];  % Posizione della sorgente nella griglia
-% sorgente.tipo = 'puntiforme';  % Tipi possibili: puntiforme, lineare, superficiale
-sorgente.direzione = [0, 0, 1];  % Direzione preferenziale di emissione
-sorgente.spettro_energetico = @(N) rand(N,1) * (1.5 - 0.5) + 0.5;  % Energia tra 0.5 e 1.5 MeV
+sorgente = definisci_sorgente(tipo_radiazione, tipo_sorgente, energia_sorgente, mAs, distanza);
 
 % Numero di fotoni
 num_particelle = 100;
