@@ -31,7 +31,9 @@ function spettro = definisci_spettro_raggiX(kVp, show)
     
     % Normalizzazione
     spettro = spettro / max(spettro);
-    
+    % Crea la struttura per restituire energia e intensità
+    spettro.energia = E;
+    spettro.intensita = intensita;
     if show 
         % Visualizzazione facoltativa dello spettro
         figure;

@@ -24,6 +24,9 @@ function spettro = definisci_spettro_gamma(MV, show)
     
     % Normalizzazione
     spettro = spettro / max(spettro);
+    % Crea la struttura per restituire energia e intensità
+    spettro.energia = E;
+    spettro.intensita = intensita;
     
     % Visualizzazione facoltativa dello spettro
     if show

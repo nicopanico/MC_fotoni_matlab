@@ -42,7 +42,7 @@ sorgente = definisci_sorgente(tipo_radiazione, tipo_sorgente, energia_sorgente, 
 num_particelle = 100;
 % Energia iniziale delle particelle (campionata dallo spettro)
 
-energie_iniziali = sorgente.spettro_energetico(num_particelle);
+energie_iniziali = sorgente.spettro_energetico(num_particelle); %%%% DA RISOLVERE UN BUG QUA
 % Parametri per diversi materiali (ad esempio: aria, tessuto, ossa)
 % Parametri per diversi materiali (ad esempio: aria, tessuto, osso)
 materiali(1).nome = 'aria';
