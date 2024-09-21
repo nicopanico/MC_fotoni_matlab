@@ -440,6 +440,9 @@ end
 
 %% NOTE CODICE
 
-% 2 -  Sistemare la tabulazione dei coefficienti di assorbimento in base al
-% database NIST XCOM e fare interpolazione dei dati reali
-% 4 - gestire la queue delle particelle secondarie e delle loro interazioni
+% -Integrare il modello elettronico al meglio nel codice, testando che
+% funzioni 
+% -Cercare di definire bene come inserire gli input geometrici nel codice
+% (strutture)
+% -Calcolare numero fotoni dalle fluenze per avere il giusto rescaling
+% della dose in fase di simulazione e calcolo

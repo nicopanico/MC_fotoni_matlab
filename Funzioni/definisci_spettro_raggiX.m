@@ -18,7 +18,7 @@ function spettro = definisci_spettro_raggiX(kVp, show)
     picco2 = exp(-((E - 67).^2) / (2 * 2^2));  % Picco a 67 keV (larghezza 2 keV)
     
     % Combinazione della componente di Bremsstrahlung e dei picchi caratteristici
-    spettro = N_brem + 0.1 * (picco1 + picco2);  % Somma ponderata (peso 0.1 per i picchi)
+    intensita = N_brem + 0.1 * (picco1 + picco2);  % Somma ponderata (peso 0.1 per i picchi)
     
     % Filtrazione con filtro di tungsteno
     % Coefficiente di attenuazione massico approssimato per il tungsteno
@@ -27,13 +27,16 @@ function spettro = definisci_spettro_raggiX(kVp, show)
     
     % Calcolo della filtrazione in funzione dell'energia
     attenuazione_tungsteno = exp(-a * E.^(-b));  % Modello di attenuazione con tungsteno
-    spettro = spettro .* attenuazione_tungsteno;   % Spettro filtrato
+    intensita = intensita .* attenuazione_tungsteno;   % Spettro filtrato
     
     % Normalizzazione
-    spettro = spettro / max(spettro);
+    intesita = intensita / max(intensita);
     % Crea la struttura per restituire energia e intensità
     spettro.energia = E;
     spettro.intensita = intensita;
+
+    % Controlla valori anomali
+    spettro.intensita = fillmissing(spettro.intensita, 'linear');  % Interpola linearmente il NaN
     if show 
         % Visualizzazione facoltativa dello spettro
         figure;

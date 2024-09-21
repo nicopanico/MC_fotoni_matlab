@@ -20,13 +20,17 @@ function spettro = definisci_spettro_gamma(MV, show)
     N2 = (1 ./ (E * picco2_sigma * sqrt(2 * pi))) .* exp(- (log(E) - log(picco2_media)).^2 / (2 * picco2_sigma^2));
     
     % Combinazione dei due picchi per ottenere lo spettro finale
-    spettro = N1 + N2;
+    intensita = N1 + N2;
     
     % Normalizzazione
-    spettro = spettro / max(spettro);
+    intensita = intensita / max(intensita);
     % Crea la struttura per restituire energia e intensità
+    spettro = struct();  % Inizializzazione della struttura
     spettro.energia = E;
     spettro.intensita = intensita;
+    
+    % Controlla valori anomali
+    spettro.intensita = fillmissing(spettro.intensita, 'linear');  % Interpola linearmente il NaN
     
     % Visualizzazione facoltativa dello spettro
     if show
