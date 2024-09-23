@@ -5,7 +5,7 @@ radiazione(1).nome = 'fotone';
 radiazione(1).massa = 0;  % in MeV/c^2
 radiazione(1).carica = 0;
 radiazione(1).interazioni = {'fotoelettrico', 'compton', 'pair_production'};
-
+rr = 2 ; 
 radiazione(2).nome = 'elettrone';
 radiazione(2).massa = 0.511;  % in MeV/c^2
 radiazione(2).carica = -1;
