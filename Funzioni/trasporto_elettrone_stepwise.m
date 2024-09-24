@@ -1,4 +1,4 @@
-function [nuova_posizione, nuova_direzione, energia_residua] = trasporto_elettrone_stepwise(posizione_iniziale, direzione_iniziale, energia_iniziale, materiale, passo, stopping_power, scattering_angle_std)
+function [nuova_posizione, nuova_direzione, energia_residua] = trasporto_elettrone_stepwise(posizione_iniziale, direzione_iniziale, energia_iniziale, passo, stopping_power, scattering_angle_std)
     % Funzione per simulare il trasporto di un elettrone in maniera step-wise
     % Input:
     %   posizione_iniziale: [x, y, z] posizione iniziale dell'elettrone
