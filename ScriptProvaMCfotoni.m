@@ -200,31 +200,47 @@ parfor i = 1:num_particelle
         elseif strcmp(particella.tipo, 'elettrone')
             materiale_idx = material_grid(posizione(1), posizione(2), posizione(3));
             materiale = materiali(materiale_idx);
+            % Calculate the stochastic range for electron transport
+            distanza_stocastica = calcola_distanza_stocastica(particella.energia, materiale);
+            soglia_energia = 0; %Energia sotto la quale l'elettrone viene fermato
 
-            stopping_power = ottieni_stopping_power(particella.energia, materiali(materiale_idx).nome);
-            % Simulazione di elettroni emessi (secondari)
-            [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(particella.energia, stopping_power);
-            nuova_posizione = round(particella.posizione + distanza_percorsa * particella.direzione);
-            % Controlla se la nuova posizione è fuori dalla griglia
-            if particella_fuori_griglia(nuova_posizione, grid_size)
-                % Se l'elettrone è fuori dalla griglia, fermiamo la sua simulazione
-                break;
-            end
+            % Initialize electron transport
+            energia_residua = particella.energia;
+            posizione_elettrone = particella.posizione;
+            direzione_elettrone = particella.direzione;
+            % Continue transport until energy is below a threshold or stochastic range is traveled
+            while energia_residua > soglia_energia && distanza_stocastica > 0
+                % Calculate stopping power at current energy and material
+                stopping_power = ottieni_stopping_power(energia_residua, materiale);
 
-            % Se la particella è ancora dentro la griglia, aggiorna la dose depositata
-            dose_grid_local(nuova_posizione(1), nuova_posizione(2), nuova_posizione(3)) = ...
-                dose_grid_local(nuova_posizione(1), nuova_posizione(2), nuova_posizione(3)) + energia_depositata;
+                % Stepwise transport for electron
+                [nuova_posizione, nuova_direzione, energia_residua] = trasporto_elettrone_stepwise(...
+                    posizione_elettrone, direzione_elettrone, energia_residua, materiale, passo, stopping_power, scattering_angle_std);
 
-            % Aggiorna Energia della particella
-            particella.energia = particella.energia - energia_depositata;
-            % Aggiorna la posizione dell'elettrone
-            particella.posizione = nuova_posizione;
+                % Update stochastic range (reduce the remaining distance)
+                distanza_stocastica = distanza_stocastica - norm(nuova_posizione - posizione_elettrone);
 
-            % Se l'elettrone ha ancora energia, rimetti la particella nella queue
-            if particella.energia > 0
+                % Update the particle's position and direction
                 particella.posizione = nuova_posizione;
-                particelle_queue = [particelle_queue; particella];
-            end
+                particella.direzione = nuova_direzione;
+
+                % Check if particle is outside the grid
+                if particella_fuori_griglia(nuova_posizione, grid_size)
+                    break;
+                end
+
+                % Calculate the energy deposited during this step using the stopping power
+                energia_depositata = stopping_power * norm(nuova_posizione - posizione_elettrone);
+
+                % Update the dose grid with deposited energy
+                dose_grid_local(nuova_posizione(1), nuova_posizione(2), nuova_posizione(3)) = ...
+                    dose_grid_local(nuova_posizione(1), nuova_posizione(2), nuova_posizione(3)) + energia_depositata;
+
+                % Requeue the electron if it still has energy
+                if energia_residua > soglia_energia
+                    particelle_queue = [particelle_queue; particella];
+                end
+            end     
         elseif strcmp(particella.tipo, 'positrone')
             materiale_idx = material_grid(posizione(1), posizione(2), posizione(3));
             materiale = materiali(materiale_idx);
