@@ -201,7 +201,7 @@ parfor i = 1:num_particelle
             materiale_idx = material_grid(posizione(1), posizione(2), posizione(3));
             materiale = materiali(materiale_idx);
             % Calculate the stochastic range for electron transport
-            distanza_stocastica = calcola_distanza_stocastica(particella.energia, materiale);
+            [distanza_stocastica] = calcola_distanza_stocastica(particella.energia, materiale);
             soglia_energia = 0; %Energia sotto la quale l'elettrone viene fermato
 
             % Initialize electron transport
@@ -212,6 +212,7 @@ parfor i = 1:num_particelle
             while energia_residua > soglia_energia && distanza_stocastica > 0
                 % Calculate stopping power at current energy and material
                 stopping_power = ottieni_stopping_power(energia_residua, materiale);
+                
 
                 % Stepwise transport for electron
                 [nuova_posizione, nuova_direzione, energia_residua] = trasporto_elettrone_stepwise(...

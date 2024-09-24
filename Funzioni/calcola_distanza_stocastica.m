@@ -25,9 +25,17 @@ function [varargout] = calcola_distanza_stocastica(energia, materiale)
     scattering_factor = normrnd(1, 0.2);  % Gaussian variation (mean 1, std. dev 0.2)
     varargout{3} = scattering_factor;  % Assign scattering factor as the third output
 
-    % Calcola la distanza finale applicando il fattore di scattering
-    distanza_percorsa = distanza_percorsa * scattering_factor;
+    % Calcola la distanza stocastica solo se richiesto
+    if calcola_distanza
+        % Simula la distanza percorsa usando una distribuzione esponenziale
+        distanza_percorsa = -mean_free_path * log(rand());
 
-    % Assicura che la distanza non sia negativa
-    varargout{1} = max(0, distanza_percorsa);  % First output is the corrected distance
+        % Applica il fattore di correzione per multiple scattering
+        distanza_percorsa = distanza_percorsa * scattering_factor;
+
+        % Assicura che la distanza non sia negativa
+        varargout{1} = max(0, distanza_percorsa);  % First output is stochastic distance
+    else
+        varargout{1} = [];  % Nessuna distanza stocastica se non richiesta
+    end
 end
