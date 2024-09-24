@@ -338,16 +338,6 @@ function fuori = particella_fuori_griglia(posizione, grid_size)
             (posizione(3) < 1 || posizione(3) > grid_size(3));
 end
 
-function mu_tot = coefficiente_attenuazione(materiale, energia, interazione)
-    % Questa funzione restituisce il coefficiente di attenuazione per un materiale,
-    % un'energia specifica e un tipo di interazione.
-    % Implementa formule o interpolazioni da dati tabulati.
-    
-    % Esempio semplificato: mu = k * energia^(-n)
-    k = materiale.k(interazione);
-    n = materiale.n(interazione);
-    mu_tot = k * energia^(-n);
-end
 % Funzione per calcolare l'angolo di scattering secondo Klein-Nishina
 function angolo_scat = calcola_angolo_scat(energia)
     % Costanti
