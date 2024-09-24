@@ -16,10 +16,6 @@ function [varargout] = calcola_distanza_stocastica(energia, materiale)
     mean_free_path = 1 / stopping_power;  % Mean free path in cm
     varargout{2} = mean_free_path;  % Assign the mean free path as the second output
 
-    % Simula la distanza percorsa usando una distribuzione esponenziale stocastica
-    % per il cammino libero medio
-    distanza_percorsa = -mean_free_path * log(rand());
-
     % Applica un fattore di correzione per il multiple scattering (Molière theory)
     % Questo fattore aumenta la distanza percorsa considerando la diffusione angolare
     scattering_factor = normrnd(1, 0.2);  % Gaussian variation (mean 1, std. dev 0.2)
@@ -27,7 +23,8 @@ function [varargout] = calcola_distanza_stocastica(energia, materiale)
 
     % Calcola la distanza stocastica solo se richiesto
     if calcola_distanza
-        % Simula la distanza percorsa usando una distribuzione esponenziale
+       % Simula la distanza percorsa usando una distribuzione esponenziale stocastica
+       % per il cammino libero medio
         distanza_percorsa = -mean_free_path * log(rand());
 
         % Applica il fattore di correzione per multiple scattering

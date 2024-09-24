@@ -212,7 +212,8 @@ parfor i = 1:num_particelle
             while energia_residua > soglia_energia && distanza_stocastica > 0
                 % Calculate stopping power at current energy and material
                 stopping_power = ottieni_stopping_power(energia_residua, materiale);
-                
+                [~,mean_free_path, scattering_angle_std] = calcola_distanza_stocastica(energia_residua, materiale);
+                passo = 0.1 * mean_free_path;  % Step size as a fraction of the mean free path
 
                 % Stepwise transport for electron
                 [nuova_posizione, nuova_direzione, energia_residua] = trasporto_elettrone_stepwise(...
