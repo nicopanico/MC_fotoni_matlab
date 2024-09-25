@@ -247,23 +247,47 @@ parfor i = 1:num_particelle
             materiale_idx = material_grid(posizione(1), posizione(2), posizione(3));
             materiale = materiali(materiale_idx);
             soglia_annichilazione = 0.511;
-            % Simula il trasporto del positrone usando la stessa logica
-            % elettrone
-            % Positrone si comporta come un elettrone
-            stopping_power = ottieni_stopping_power(particella.energia, materiali(materiale_idx).nome)
-            [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(particella.energia, stopping_power);  
-            nuova_posizione = round(particella.posizione + distanza_percorsa * particella.direzione);
+            % Inizializza energia residua e distanza stocastica
+            energia_residua = particella.energia;
+            posizione_positrone = particella.posizione;
+            direzione_positrone = particella.direzione;
 
-            % Controlla se la nuova posizione è fuori dalla griglia
-            if particella_fuori_griglia(nuova_posizione, grid_size)
-                continue;  % Se la particella è fuori dalla griglia, fermiamo la simulazione
+            % Calcolo del range stocastico prima del ciclo while, come per l'elettrone
+            distanza_stocastica = calcola_distanza_stocastica(energia_residua, materiale);
+
+            % Inizia il trasporto del positrone passo dopo passo come elettrone
+            while energia_residua > soglia_annichilazione && distanza_stocastica > 0
+                % Calcola il potere frenante alla corrente energia
+                stopping_power = ottieni_stopping_power(energia_residua, materiale);
+                
+                % Ricalcola il cammino libero medio e lo scattering alla corrente energia
+                [~, mean_free_path, scattering_angle_std] = calcola_distanza_stocastica(energia_residua, materiale);
+                passo = 0.1 * mean_free_path;  % Dimensione del passo come frazione del cammino libero medio
+                
+                % Esegui il trasporto del positrone passo dopo passo
+                [nuova_posizione, nuova_direzione, energia_residua] = trasporto_elettrone_stepwise(...
+                    posizione_positrone, direzione_positrone, energia_residua, materiale, passo, stopping_power, scattering_angle_std);
+        
+                % Aggiorna la distanza stocastica (riduci la distanza rimanente)
+                distanza_stocastica = distanza_stocastica - norm(nuova_posizione - posizione_positrone);
+        
+                % Aggiorna la posizione e la direzione della particella
+                particella.posizione = nuova_posizione;
+                particella.direzione = nuova_direzione;
+        
+                % Verifica se la particella è fuori dalla griglia
+                if particella_fuori_griglia(nuova_posizione, grid_size)
+                    break;
+                end
+        
+                % Calcola l'energia depositata durante questo passo
+                energia_depositata = stopping_power * norm(nuova_posizione - posizione_positrone);
+                dose_grid_local(nuova_posizione(1), nuova_posizione(2), nuova_posizione(3)) = ...
+                    dose_grid_local(nuova_posizione(1), nuova_posizione(2), nuova_posizione(3)) + energia_depositata;
+                
+                % Aggiorna l'energia residua
+                energia_residua = energia_residua - energia_depositata;
             end
-
-            % Aggiorna la dose depositata nella griglia
-            dose_grid_local(nuova_posizione(1), nuova_posizione(2), nuova_posizione(3)) = ...
-                dose_grid_local(nuova_posizione(1), nuova_posizione(2), nuova_posizione(3)) + energia_depositata;
-            % Aggiorna la posizione del positrone
-            particella.posizione = nuova_posizione;
             % Controlla se il positrone deve annichilarsi
             if particella.energia < soglia_annichilazione
                 % Simula l'annichilazione del positrone
@@ -402,17 +426,17 @@ function [mu_fotoelettrico, mu_compton, mu_pair_production] = coefficiente_atten
     mu_pair_production = interp1(energia_unica, mu_pair_production_unico, energia, 'linear', 'extrap');
 
 end
-function [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(energia_elettrone, stopping_power)
-
-    % Simula la distanza percorsa dall'elettrone (cammino libero medio)
-    distanza_percorsa = -log(rand) / stopping_power;
-
-    % Calcola l'energia depositata nel materiale
-    energia_depositata = min(energia_elettrone, stopping_power * distanza_percorsa);
-
-    % Riduci l'energia residua dell'elettrone
-    energia_elettrone = energia_elettrone - energia_depositata;
-end
+% function [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(energia_elettrone, stopping_power)
+% 
+%     % Simula la distanza percorsa dall'elettrone (cammino libero medio)
+%     distanza_percorsa = -log(rand) / stopping_power;
+% 
+%     % Calcola l'energia depositata nel materiale
+%     energia_depositata = min(energia_elettrone, stopping_power * distanza_percorsa);
+% 
+%     % Riduci l'energia residua dell'elettrone
+%     energia_elettrone = energia_elettrone - energia_depositata;
+% end
 
 function stopping_power = ottieni_stopping_power(energia, materiale)
     % Restituisce il potere frenante in MeV/cm in base al materiale e all'energia
