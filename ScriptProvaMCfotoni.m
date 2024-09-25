@@ -1,3 +1,9 @@
+% Ottieni il percorso della cartella principale
+mainFolder = pwd;
+% Aggiungi tutte le sottocartelle al percorso
+addpath(genpath(mainFolder));
+
+
 %% Definizione dei tipi di radiazione
 tipi_radiazione = {'fotone', 'elettrone', 'neutrone'};
 % Proprietà dei tipi di radiazione
@@ -5,7 +11,7 @@ radiazione(1).nome = 'fotone';
 radiazione(1).massa = 0;  % in MeV/c^2
 radiazione(1).carica = 0;
 radiazione(1).interazioni = {'fotoelettrico', 'compton', 'pair_production'};
-rr = 2 ; 
+ 
 radiazione(2).nome = 'elettrone';
 radiazione(2).massa = 0.511;  % in MeV/c^2
 radiazione(2).carica = -1;
@@ -39,7 +45,7 @@ distanza = 100;               % Distanza dalla sorgente in cm
 sorgente = definisci_sorgente(tipo_radiazione, tipo_sorgente, energia_sorgente, mAs, distanza);
 
 % Numero di fotoni
-num_particelle = 100;
+num_particelle = 10;
 % Energia iniziale delle particelle (campionata dallo spettro)
 
 energie_iniziali = sorgente.spettro_energetico(num_particelle); 
