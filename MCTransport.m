@@ -3,7 +3,6 @@ mainFolder = pwd;
 % Aggiungi tutte le sottocartelle al percorso
 addpath(genpath(mainFolder));
 
-
 %% Definizione dei tipi di radiazione
 tipi_radiazione = {'fotone', 'elettrone', 'neutrone'};
 % Proprietà dei tipi di radiazione
@@ -22,35 +21,24 @@ radiazione(3).massa = 939.565;  % in MeV/c^2
 radiazione(3).carica = 0;
 radiazione(3).interazioni = {'scattering_elastico', 'cattura'};
 
-% Selezione del tipo di radiazione per la simulazione
-tipo_radiazione_selezionato = radiazione(1);  % Ad esempio, fotone
-
-addpath("C:\Users\nicop\OneDrive\Desktop\MC_matlab_fotoni"); % Aggiunto un path con i dati per i coefficienti di assorbimento
-
 %% Parametri del volume
 grid_size = [100, 100, 100];  % Dimensioni della griglia 3D
 dose_grid = zeros(grid_size);  % Griglia 3D per il deposito della dose
 voxel_size = 0.1;  % Dimensione del voxel in cm (spessore di ogni cella della griglia)
 
 %% Sorgente ed energia
-% Caratteristiche della sorgente
-% Definizione della sorgente
-tipo_radiazione = 'gamma';    % Può essere 'raggiX' o 'gamma'
-tipo_sorgente = 'puntiforme'; % Può essere 'puntiforme', 'lineare', 'superficiale'
-energia_sorgente = 6;         % 6 MV per gamma terapeutica
-mAs = 0;                      % Solo per raggi X
-distanza = 100;               % Distanza dalla sorgente in cm
 
-% Richiama la funzione per definire la sorgente
-sorgente = definisci_sorgente(tipo_radiazione, tipo_sorgente, energia_sorgente, mAs, distanza);
+posizione_centro = round(grid_size / 2);  % Centro della griglia per esempio
+raggio_sorgente = 5;  % Raggio della sfera di concentrazione in cm
+num_particelle = 100;  % Numero di particelle da simulare
+tipo_radionuclide = 'Iodio-131';  % Radionuclide selezionato
 
-% Numero di fotoni
-num_particelle = 10;
+% Definizione della sorgente utilizzando la nuova funzione
+sorgente = definisci_sorgente_radionuclide(tipo_radionuclide, posizione_centro, raggio_sorgente, num_particelle);
+
 % Energia iniziale delle particelle (campionata dallo spettro)
-
-energie_iniziali = sorgente.spettro_energetico(num_particelle); 
-% Parametri per diversi materiali (ad esempio: aria, tessuto, ossa)
-% Parametri per diversi materiali (ad esempio: aria, tessuto, osso)
+energie_iniziali = sorgente.spettro_energetico; 
+%% Parametri per diversi materiali (ad esempio: aria, tessuto, osso)
 materiali(1).nome = 'aria';
 materiali(1).densita = 0.0012;  % g/cm³
 materiali(1).energia_legame = 0.000;  % Energia di legame (in MeV)
@@ -62,9 +50,6 @@ materiali(2).energia_legame = 0.000532;  % Energia di legame (in MeV)
 materiali(3).nome = 'osso';
 materiali(3).densita = 1.85;  % g/cm³
 materiali(3).energia_legame = 0.00404;  % Energia di legame (in MeV)
-
-% materiali = {'aria','tessuto','osso'};
-
 
 % Griglia che definisce il materiale in ogni voxel (esempio semplificato)
 material_grid = randi([1,3], grid_size);  % Genera un materiale casuale (1=aria, 2=tessuto, 3=osso)
@@ -78,49 +63,34 @@ mu_compton_tab = dati{:,3};  % Coefficiente Compton
 mu_pair_production_tab = dati{:,4};  % Coefficiente di produzione di coppie
 
 %% Simulazione principale
-parfor i = 1:num_particelle
+for i = 1:num_particelle
     % Energia iniziale
     energia = energie_iniziali(i);
+    energia_depositata = 0; %inizializza en_depositata
+    
     % Inizializza la particella all'inizio del ciclo
     particella = struct('tipo', 'fotone', 'energia', energie_iniziali(i), 'posizione', sorgente.posizione, 'direzione', [0, 0, 0]);
 
-    % Inizializza il materiale
-    materiale = material_grid(particella.posizione(1), particella.posizione(2), particella.posizione(3));
-
     % Posizione iniziale (sorgente)
-    posizione = sorgente.posizione;
+    posizione = sorgente.posizione(i,:);
 
-    % Definisci `particella_secondaria` all'interno del ciclo
+    % Definisci "particella_secondaria" all'interno del ciclo
     particella_secondaria = struct('tipo', 'elettrone', 'energia', 0, 'posizione', [0, 0, 0], 'direzione', [0, 0, 0]);
-    particella_elettrone_2 = struct('tipo', 'elettrone', 'energia', 0, 'posizione', [0, 0, 0], 'direzione', [0, 0, 0]);
-    particella_elettrone_1= struct('tipo', 'elettrone', 'energia', 0, 'posizione', [0, 0, 0], 'direzione', [0, 0, 0]);
     
     % Ogni thread ha la sua griglia locale indipendente
     dose_grid_local = zeros(grid_size);  
-    % Direzione iniziale
-    if strcmp(sorgente.tipo, 'puntiforme')
-        % Emissione isotropa o con preferenza direzionale
-        direzione = randn(1, 3);  % Direzione casuale
-        direzione = direzione / norm(direzione);
-    else
-        % Altre geometrie da implementare
-    end
-    % Inizializzazione del fotone
-    % energia = energia_iniziale;
-    % posizione = [50, 50, 1];  % Fotone inizialmente al centro della griglia
-    % Inizializza una coda di particelle
     particelle_queue = [];
 
     % Aggiungi le particelle primarie alla coda
-    for j = 1:num_particelle
-        particella.tipo = 'fotone';
-        particella.energia = energie_iniziali(j);
-        particella.posizione = sorgente.posizione;
-        particella.direzione = randn(1, 3);  % Direzione casuale
-        particelle_queue = [particelle_queue; particella];
-    end
 
-    % Simulazione
+    particella.tipo = 'fotone';
+    particella.energia = energia;
+    particella.posizione = posizione;
+    particella.direzione = randn(1, 3);  % Direzione casuale
+    particelle_queue = [particelle_queue; particella];
+
+
+    % Simulazione interazioni
     while ~isempty(particelle_queue)
         % Estrae la particella dalla coda
         particella = particelle_queue(1);
@@ -207,7 +177,7 @@ parfor i = 1:num_particelle
             materiale_idx = material_grid(posizione(1), posizione(2), posizione(3));
             materiale = materiali(materiale_idx);
             % Calculate the stochastic range for electron transport
-            [distanza_stocastica] = calcola_distanza_stocastica(particella.energia, materiale);
+            [distanza_stocastica] = calcola_distanza_stocastica(particella.energia, materiale.nome, true);
             soglia_energia = 0; %Energia sotto la quale l'elettrone viene fermato
 
             % Initialize electron transport
@@ -217,13 +187,13 @@ parfor i = 1:num_particelle
             % Continue transport until energy is below a threshold or stochastic range is traveled
             while energia_residua > soglia_energia && distanza_stocastica > 0
                 % Calculate stopping power at current energy and material
-                stopping_power = ottieni_stopping_power(energia_residua, materiale);
-                [~,mean_free_path, scattering_angle_std] = calcola_distanza_stocastica(energia_residua, materiale);
+                stopping_power = ottieni_stopping_power(energia_residua, materiale.nome);
+                [~,mean_free_path, scattering_angle_std] = calcola_distanza_stocastica(energia_residua, materiale.nome, false);
                 passo = 0.1 * mean_free_path;  % Step size as a fraction of the mean free path
 
                 % Stepwise transport for electron
                 [nuova_posizione, nuova_direzione, energia_residua] = trasporto_elettrone_stepwise(...
-                    posizione_elettrone, direzione_elettrone, energia_residua, materiale, passo, stopping_power, scattering_angle_std);
+                    posizione_elettrone, direzione_elettrone, energia_residua, passo, stopping_power, scattering_angle_std);
 
                 % Update stochastic range (reduce the remaining distance)
                 distanza_stocastica = distanza_stocastica - norm(nuova_posizione - posizione_elettrone);
@@ -241,6 +211,7 @@ parfor i = 1:num_particelle
                 energia_depositata = stopping_power * norm(nuova_posizione - posizione_elettrone);
 
                 % Update the dose grid with deposited energy
+                nuova_posizione = round(nuova_posizione);
                 dose_grid_local(nuova_posizione(1), nuova_posizione(2), nuova_posizione(3)) = ...
                     dose_grid_local(nuova_posizione(1), nuova_posizione(2), nuova_posizione(3)) + energia_depositata;
 
@@ -259,15 +230,15 @@ parfor i = 1:num_particelle
             direzione_positrone = particella.direzione;
 
             % Calcolo del range stocastico prima del ciclo while, come per l'elettrone
-            distanza_stocastica = calcola_distanza_stocastica(energia_residua, materiale);
+            distanza_stocastica = calcola_distanza_stocastica(energia_residua, materiale.nome, true);
 
             % Inizia il trasporto del positrone passo dopo passo come elettrone
             while energia_residua > soglia_annichilazione && distanza_stocastica > 0
                 % Calcola il potere frenante alla corrente energia
-                stopping_power = ottieni_stopping_power(energia_residua, materiale);
+                stopping_power = ottieni_stopping_power(energia_residua, materiale.nome);
                 
                 % Ricalcola il cammino libero medio e lo scattering alla corrente energia
-                [~, mean_free_path, scattering_angle_std] = calcola_distanza_stocastica(energia_residua, materiale);
+                [~, mean_free_path, scattering_angle_std] = calcola_distanza_stocastica(energia_residua, materiale.nome, false);
                 passo = 0.1 * mean_free_path;  % Dimensione del passo come frazione del cammino libero medio
                 
                 % Esegui il trasporto del positrone passo dopo passo
@@ -288,6 +259,7 @@ parfor i = 1:num_particelle
         
                 % Calcola l'energia depositata durante questo passo
                 energia_depositata = stopping_power * norm(nuova_posizione - posizione_positrone);
+                nuova_posizione = round(nuova_posizione);
                 dose_grid_local(nuova_posizione(1), nuova_posizione(2), nuova_posizione(3)) = ...
                     dose_grid_local(nuova_posizione(1), nuova_posizione(2), nuova_posizione(3)) + energia_depositata;
                 
@@ -338,9 +310,9 @@ end
 
 %% Visualizzazione 3D di voxel con dose non nulla in Gray e scala di colori
 
-visualizza_dose(dose_in_Gy_grid, 0, false);  % 'dose_grid' è la griglia 3D della dose, e 0.1 è la soglia di dose
-visualizza_dose_TPS(dose_in_Gy_grid, 0, 'Gy');
-visualizza_dose_interattiva(dose_in_Gy_grid, 'Gy');
+% visualizza_dose(dose_in_Gy_grid, 0, false);  % 'dose_grid' è la griglia 3D della dose, e 0.1 è la soglia di dose
+% visualizza_dose_TPS(dose_in_Gy_grid, 0, 'Gy');
+% visualizza_dose_interattiva(dose_in_Gy_grid, 'Gy');
 % figure;
 % [x, y, z] = ind2sub(size(dose_in_Gy_grid), find(dose_in_Gy_grid > 0));  % Trova i voxel con dose non nulla
 % dose_values_Gy = dose_in_Gy_grid(dose_in_Gy_grid > 0);  % Dose corrispondente in Gy
@@ -380,11 +352,7 @@ fprintf('La dose stimata è: %.3f MeV/cm^3\n', dose_media_MeV_cm3);
 fprintf('La dose stimata è: %.3f Gy\n', dose_media_Gy);
 
 %% Funzioni
-function fuori = particella_fuori_griglia(posizione, grid_size)
-    fuori = (posizione(1) < 1 || posizione(1) > grid_size(1)) || ...
-            (posizione(2) < 1 || posizione(2) > grid_size(2)) || ...
-            (posizione(3) < 1 || posizione(3) > grid_size(3));
-end
+
 
 % Funzione per calcolare l'angolo di scattering secondo Klein-Nishina
 function angolo_scat = calcola_angolo_scat(energia)
@@ -416,65 +384,6 @@ function energia_scat = calcola_energia_scat(energia_iniziale, angolo_scat)
     energia_scat = energia_iniziale / (1 + (energia_iniziale/m_e) * (1 - cos(angolo_scat)));
 end
 
-% Funzione per interpolare i coefficienti dai dati tabulati (aggiornata)
-function [mu_fotoelettrico, mu_compton, mu_pair_production] = coefficiente_attenuazione_tab(energia, energia_tab, mu_fotoelettrico_tab, mu_compton_tab, mu_pair_production_tab)
-     % Rimuovi eventuali duplicati dalle energie e dai coefficienti associati
-    [energia_unica, idx] = unique(energia_tab, 'stable');  % Rimuovi energie duplicate, mantieni l'ordine originale
-    
-    % Applica la stessa selezione agli altri coefficienti in base all'indice unico
-    mu_fotoelettrico_unico = mu_fotoelettrico_tab(idx);
-    mu_compton_unico = mu_compton_tab(idx);
-    mu_pair_production_unico = mu_pair_production_tab(idx);
-
-    % Interpolazione lineare per trovare i coefficienti a un'energia specifica
-    mu_fotoelettrico = interp1(energia_unica, mu_fotoelettrico_unico, energia, 'linear', 'extrap');
-    mu_compton = interp1(energia_unica, mu_compton_unico, energia, 'linear', 'extrap');
-    mu_pair_production = interp1(energia_unica, mu_pair_production_unico, energia, 'linear', 'extrap');
-
-end
-% function [energia_depositata, distanza_percorsa] = sezione_urto_elettrone(energia_elettrone, stopping_power)
-% 
-%     % Simula la distanza percorsa dall'elettrone (cammino libero medio)
-%     distanza_percorsa = -log(rand) / stopping_power;
-% 
-%     % Calcola l'energia depositata nel materiale
-%     energia_depositata = min(energia_elettrone, stopping_power * distanza_percorsa);
-% 
-%     % Riduci l'energia residua dell'elettrone
-%     energia_elettrone = energia_elettrone - energia_depositata;
-% end
-
-function stopping_power = ottieni_stopping_power(energia, materiale)
-    % Restituisce il potere frenante in MeV/cm in base al materiale e all'energia
-    switch materiale
-        case 'aria'
-            if energia < 0.5
-                stopping_power = 2.02;  % Potere frenante per aria a 0.1 MeV
-            elseif energia < 5
-                stopping_power = 1.82;  % Potere frenante per aria a 1 MeV
-            else
-                stopping_power = 1.73;  % Potere frenante per aria a 10 MeV
-            end
-        case 'tessuto'
-            if energia < 0.5
-                stopping_power = 2.00;  % Potere frenante per tessuto a 0.1 MeV
-            elseif energia < 5
-                stopping_power = 1.55;  % Potere frenante per tessuto a 1 MeV
-            else
-                stopping_power = 1.35;  % Potere frenante per tessuto a 10 MeV
-            end
-        case 'osso'
-            if energia < 0.5
-                stopping_power = 2.90;  % Potere frenante per osso a 0.1 MeV
-            elseif energia < 5
-                stopping_power = 2.40;  % Potere frenante per osso a 1 MeV
-            else
-                stopping_power = 1.95;  % Potere frenante per osso a 10 MeV
-            end
-        otherwise
-            error('Materiale non riconosciuto.');
-    end
-end
 
 %% NOTE CODICE
 

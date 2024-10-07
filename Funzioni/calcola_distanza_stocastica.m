@@ -1,13 +1,17 @@
-function [varargout] = calcola_distanza_stocastica(energia, materiale)
+function [varargout] = calcola_distanza_stocastica(energia, materiale, calcola_distanza)
     % Simula la distanza percorsa da un elettrone con un metodo stocastico e variazione del potere frenante
     % Input:
     %   energia: energia residua dell'elettrone (MeV)
     %   materiale: tipo di materiale (aria, tessuto, osso)
-    %
+    %   calcola_distanza: flag booleano per decidere se calcolare la distanza stocastica
+
     % Output:
     %   distanza_percorsa: distanza percorsa dall'elettrone
     %   mean_free_path: cammino libero medio (in cm)
     %   scattering_factor: fattore di correzione per il multiple scattering
+    if nargin < 3
+        error('La funzione richiede tre argomenti: energia, materiale e calcola_distanza');
+    end
 
     % Ottieni il potere frenante (stopping power) in funzione dell'energia e del materiale
     stopping_power = ottieni_stopping_power(energia, materiale);
