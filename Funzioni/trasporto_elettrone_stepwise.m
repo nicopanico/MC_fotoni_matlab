@@ -25,7 +25,7 @@ function [nuova_posizione, nuova_direzione, energia_residua] = trasporto_elettro
     nuova_direzione = [sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)];
 
     % Calcola l'energia residua riducendola in base al potere frenante e alla distanza percorsa
-    energia_depositata = min(energia_iniziale, stopping_power * passo);
+    energia_depositata = stopping_power * passo;
     energia_residua = energia_iniziale - energia_depositata;
     
     if energia_residua < 0

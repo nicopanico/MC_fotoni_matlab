@@ -30,7 +30,7 @@ voxel_size = 0.1;  % Dimensione del voxel in cm (spessore di ogni cella della gr
 
 posizione_centro = round(grid_size / 2);  % Centro della griglia per esempio
 raggio_sorgente = 5;  % Raggio della sfera di concentrazione in cm
-num_particelle = 100;  % Numero di particelle da simulare
+num_particelle = 10000;  % Numero di particelle da simulare
 tipo_radionuclide = 'Iodio-131';  % Radionuclide selezionato
 
 % Definizione della sorgente utilizzando la nuova funzione
@@ -63,7 +63,7 @@ mu_compton_tab = dati{:,3};  % Coefficiente Compton
 mu_pair_production_tab = dati{:,4};  % Coefficiente di produzione di coppie
 
 %% Simulazione principale
-for i = 1:num_particelle
+parfor i = 1:num_particelle
     % Energia iniziale
     energia = energie_iniziali(i);
     energia_depositata = 0; %inizializza en_depositata
@@ -174,7 +174,7 @@ for i = 1:num_particelle
                 end
             end
         elseif strcmp(particella.tipo, 'elettrone')
-            materiale_idx = material_grid(posizione(1), posizione(2), posizione(3));
+            materiale_idx = material_grid(round(posizione(1)), round(posizione(2)), round(posizione(3)));
             materiale = materiali(materiale_idx);
             % Calculate the stochastic range for electron transport
             [distanza_stocastica] = calcola_distanza_stocastica(particella.energia, materiale.nome, true);
@@ -197,6 +197,9 @@ for i = 1:num_particelle
 
                 % Update stochastic range (reduce the remaining distance)
                 distanza_stocastica = distanza_stocastica - norm(nuova_posizione - posizione_elettrone);
+
+                % Aggiorna l'energia della particella
+                particella.energia = energia_residua;
 
                 % Update the particle's position and direction
                 particella.posizione = nuova_posizione;
@@ -221,7 +224,7 @@ for i = 1:num_particelle
                 end
             end     
         elseif strcmp(particella.tipo, 'positrone')
-            materiale_idx = material_grid(posizione(1), posizione(2), posizione(3));
+            materiale_idx = material_grid(round(posizione(1)), round(posizione(2)), round(posizione(3)));
             materiale = materiali(materiale_idx);
             soglia_annichilazione = 0.511;
             % Inizializza energia residua e distanza stocastica
@@ -310,9 +313,9 @@ end
 
 %% Visualizzazione 3D di voxel con dose non nulla in Gray e scala di colori
 
-% visualizza_dose(dose_in_Gy_grid, 0, false);  % 'dose_grid' è la griglia 3D della dose, e 0.1 è la soglia di dose
-% visualizza_dose_TPS(dose_in_Gy_grid, 0, 'Gy');
-% visualizza_dose_interattiva(dose_in_Gy_grid, 'Gy');
+visualizza_dose(dose_in_Gy_grid, 0, false);  % 'dose_grid' è la griglia 3D della dose, e 0.1 è la soglia di dose
+visualizza_dose_TPS(dose_in_Gy_grid, 0, 'Gy');
+visualizza_dose_interattiva(dose_in_Gy_grid, 'Gy');
 % figure;
 % [x, y, z] = ind2sub(size(dose_in_Gy_grid), find(dose_in_Gy_grid > 0));  % Trova i voxel con dose non nulla
 % dose_values_Gy = dose_in_Gy_grid(dose_in_Gy_grid > 0);  % Dose corrispondente in Gy
