@@ -30,14 +30,12 @@ voxel_size = 0.1;  % Dimensione del voxel in cm (spessore di ogni cella della gr
 
 posizione_centro = round(grid_size / 2);  % Centro della griglia per esempio
 raggio_sorgente = 5;  % Raggio della sfera di concentrazione in cm
-num_particelle = 10000;  % Numero di particelle da simulare
+num_particelle = 10;  % Numero di particelle da simulare
 tipo_radionuclide = 'Iodio-131';  % Radionuclide selezionato
 
 % Definizione della sorgente utilizzando la nuova funzione
 sorgente = definisci_sorgente_radionuclide(tipo_radionuclide, posizione_centro, raggio_sorgente, num_particelle);
 
-% Energia iniziale delle particelle (campionata dallo spettro)
-energie_iniziali = sorgente.spettro_energetico; 
 %% Parametri per diversi materiali (ad esempio: aria, tessuto, osso)
 materiali(1).nome = 'aria';
 materiali(1).densita = 0.0012;  % g/cm³
@@ -64,31 +62,27 @@ mu_pair_production_tab = dati{:,4};  % Coefficiente di produzione di coppie
 
 %% Simulazione principale
 parfor i = 1:num_particelle
-    % Energia iniziale
-    energia = energie_iniziali(i);
-    energia_depositata = 0; %inizializza en_depositata
-    
-    % Inizializza la particella all'inizio del ciclo
-    particella = struct('tipo', 'fotone', 'energia', energie_iniziali(i), 'posizione', sorgente.posizione, 'direzione', [0, 0, 0]);
 
+    % Estrai le energie del fotone e dell'elettrone campionate
+    energia_fotone = sorgente.spettro_fotoni(i);
+    energia_elettrone = sorgente.spettro_elettroni(i);
+    
+    
     % Posizione iniziale (sorgente)
     posizione = sorgente.posizione(i,:);
 
-    % Definisci "particella_secondaria" all'interno del ciclo
+    % Inizializza la particella per il fotone e l'elettrone
+    particella_fotone = struct('tipo', 'fotone', 'energia', energia_fotone, 'posizione', posizione, 'direzione', randn(1, 3));
+    particella_elettrone = struct('tipo', 'elettrone', 'energia', energia_elettrone, 'posizione', posizione, 'direzione', randn(1, 3));
+    % Definisci "particella_secondaria" prima del ciclo while
     particella_secondaria = struct('tipo', 'elettrone', 'energia', 0, 'posizione', [0, 0, 0], 'direzione', [0, 0, 0]);
-    
+
     % Ogni thread ha la sua griglia locale indipendente
     dose_grid_local = zeros(grid_size);  
     particelle_queue = [];
 
-    % Aggiungi le particelle primarie alla coda
-
-    particella.tipo = 'fotone';
-    particella.energia = energia;
-    particella.posizione = posizione;
-    particella.direzione = randn(1, 3);  % Direzione casuale
-    particelle_queue = [particelle_queue; particella];
-
+    % Aggiungi sia il fotone che l'elettrone alla coda delle particelle
+    particelle_queue = [particelle_queue; particella_fotone; particella_elettrone];
 
     % Simulazione interazioni
     while ~isempty(particelle_queue)

@@ -7,14 +7,29 @@ function sorgente = definisci_sorgente_radionuclide(tipo_radionuclide, posizione
     
     switch tipo_radionuclide
         case 'Iodio-131'
-            % Energia gamma principale: 364 keV (0.364 MeV), e altri contributi
-            energie = [0.364, 0.637, 0.723];  % In MeV, principali emissioni gamma
-            probabilita = [0.82, 0.07, 0.18];  % Probabilità associate alle emissioni
+            % Energia gamma principale: 364 keV (0.364 MeV) e altri contributi
+            energie_gamma = [0.364, 0.637, 0.723];  % In MeV, principali emissioni gamma
+            probabilita_gamma = [0.82, 0.07, 0.18];  % Probabilità associate alle emissioni gamma
+            
+            % Energia beta: distribuita in modo continuo tra 0 e 0.807 MeV
+            energia_beta = rand(num_particelle, 1) * 0.807;  % Energia beta in MeV
+
+            % Campionamento delle energie gamma per ciascun fotone
+            energia_gamma = randsample(energie_gamma, num_particelle, true, probabilita_gamma);
+            
+            % Due spettri separati: uno per gli elettroni (beta) e uno per i fotoni (gamma)
+            sorgente.spettro_elettroni = energia_beta;
+            sorgente.spettro_fotoni = energia_gamma;
 
         case 'Lutetium-177'
-            % Energie gamma principali: 113 keV e 208 keV
-            energie = [0.113, 0.208];  % In MeV, emissioni principali
-            probabilita = [0.11, 0.13];  % Probabilità associate alle emissioni
+            % Simile all'approccio per l'Iodio-131, ma con le sue energie
+            energie_gamma = [0.113, 0.208];  % Emissioni gamma
+            probabilita_gamma = [0.11, 0.13];  % Probabilità
+            energia_beta = rand(num_particelle, 1) * 0.5;  % Beta continua
+            energia_gamma = randsample(energie_gamma, num_particelle, true, probabilita_gamma);
+            
+            sorgente.spettro_elettroni = energia_beta;
+            sorgente.spettro_fotoni = energia_gamma;
 
         case 'Yttrium-90'
             % Energia beta principale: 2.28 MeV
@@ -25,8 +40,6 @@ function sorgente = definisci_sorgente_radionuclide(tipo_radionuclide, posizione
             error('Radionuclide non supportato.');
     end
     
-    % Campiona l'energia delle particelle in base allo spettro e alle probabilità
-    sorgente.spettro_energetico = randsample(energie, num_particelle, true, probabilita);
     
     % Definizione della posizione della sorgente come sfera di concentrazione
     sorgente.posizione = [];
