@@ -22,10 +22,25 @@ radiazione(3).carica = 0;
 radiazione(3).interazioni = {'scattering_elastico', 'cattura'};
 
 %% Parametri del volume
-grid_size = [100, 100, 100];  % Dimensioni della griglia 3D
-dose_grid = zeros(grid_size);  % Griglia 3D per il deposito della dose
-voxel_size = 0.1;  % Dimensione del voxel in cm (spessore di ogni cella della griglia)
+% Esempio di utilizzo della funzione
+[material_grid, griglia_voxel, info_dicom, materiale_mappa, materiali] = genera_griglia_materiale('path_to_dicom_folder', materiali);
 
+% Visualizza la mappa degli ID materiali e i loro nomi
+disp(materiale_mappa);
+
+% Visualizza i materiali aggiornati
+disp(materiali);
+
+% Griglia 3D per il deposito della dose con dimensioni basate sulla griglia voxel reale
+dose_grid = zeros(size(griglia_voxel));  % Stessa dimensione della griglia voxel DICOM
+
+% Dimensioni del voxel (in cm) basate sui metadati DICOM
+voxel_size_x = info_dicom.PixelSpacing(1);  % Dimensione del voxel in X (cm)
+voxel_size_y = info_dicom.PixelSpacing(2);  % Dimensione del voxel in Y (cm)
+voxel_size_z = info_dicom.SliceThickness;   % Spessore del voxel in Z (cm)
+
+% Volume del voxel in cm³
+voxel_size = voxel_size_x * voxel_size_y * voxel_size_z;
 %% Sorgente ed energia
 
 posizione_centro = round(grid_size / 2);  % Centro della griglia per esempio
@@ -94,6 +109,20 @@ parfor i = 1:num_particelle
         energia = particella.energia;
         posizione = particella.posizione;
         direzione = particella.direzione;
+
+        % Ottieni il valore HU del voxel attuale dalla griglia voxel (griglia_voxel)
+        HU_value = griglia_voxel(round(posizione(1)), round(posizione(2)), round(posizione(3)));
+
+        % Ottieni il materiale del voxel dalla griglia dei materiali (material_grid)
+        materiale_id = material_grid(round(posizione(1)), round(posizione(2)), round(posizione(3)));
+        materiale_nome = materiali(materiale_id).nome;
+
+        % Usa la funzione per escludere voxel d'aria
+        if escludi_voxel_aria(HU_value, materiale_nome)
+            % Se il voxel è aria (non polmone), arresta il calcolo per questa particella
+            break;
+        end
+
         if strcmp(particella.tipo, 'fotone')
             % Simulazione delle interazioni per i fotoni
             while energia > 0
@@ -110,8 +139,13 @@ parfor i = 1:num_particelle
                 nuova_posizione = posizione + mfp * randn(1,3);
                 posizione = round(nuova_posizione);
                 
-                % Controlla se la particella è ancora nel volume
-                if particella_fuori_griglia(posizione, grid_size)
+                % Verifica se la particella è fuori dal corpo del paziente (voxel d'aria non polmone)
+                HU_value = griglia_voxel(round(posizione(1)), round(posizione(2)), round(posizione(3)));
+                materiale_id = material_grid(round(posizione(1)), round(posizione(2)), round(posizione(3)));
+                materiale_nome = materiali(materiale_id).nome;
+
+                if escludi_voxel_aria(HU_value, materiale_nome)
+                    % Se la particella è uscita dal paziente, interrompi la simulazione
                     break;
                 end
             
@@ -199,8 +233,13 @@ parfor i = 1:num_particelle
                 particella.posizione = nuova_posizione;
                 particella.direzione = nuova_direzione;
 
-                % Check if particle is outside the grid
-                if particella_fuori_griglia(nuova_posizione, grid_size)
+                % Verifica se la particella è fuori dal corpo del paziente (voxel d'aria non polmone)
+                HU_value = griglia_voxel(round(posizione(1)), round(posizione(2)), round(posizione(3)));
+                materiale_id = material_grid(round(posizione(1)), round(posizione(2)), round(posizione(3)));
+                materiale_nome = materiali(materiale_id).nome;
+
+                if escludi_voxel_aria(HU_value, materiale_nome)
+                    % Se la particella è uscita dal paziente, interrompi la simulazione
                     break;
                 end
 
@@ -249,8 +288,13 @@ parfor i = 1:num_particelle
                 particella.posizione = nuova_posizione;
                 particella.direzione = nuova_direzione;
         
-                % Verifica se la particella è fuori dalla griglia
-                if particella_fuori_griglia(nuova_posizione, grid_size)
+                % Verifica se la particella è fuori dal corpo del paziente (voxel d'aria non polmone)
+                HU_value = griglia_voxel(round(posizione(1)), round(posizione(2)), round(posizione(3)));
+                materiale_id = material_grid(round(posizione(1)), round(posizione(2)), round(posizione(3)));
+                materiale_nome = materiali(materiale_id).nome;
+
+                if escludi_voxel_aria(HU_value, materiale_nome)
+                    % Se la particella è uscita dal paziente, interrompi la simulazione
                     break;
                 end
         
@@ -284,23 +328,23 @@ end
 
 %% Conversione della dose da MeV/cm³ a Gray (Gy)
 
-% Parametri della densità per i diversi materiali (in kg/m³)
-densita_materiale = [1.2, 1000, 1850];  % Aria, acqua/tessuto, osso (approssimati)
-
 % Costante di conversione MeV -> J
 MeV_to_J = 1.60218e-13;
 
-% Conversione della dose da MeV/cm³ a Gy
-dose_in_Gy_grid = zeros(grid_size);  % Griglia per la dose in unità di Gray
+% Calcola il volume del voxel in cm³ basato sui metadati DICOM
+voxel_volume = info_dicom.PixelSpacing(1) * info_dicom.PixelSpacing(2) * info_dicom.SliceThickness;
 
-% Itera attraverso la griglia e converte la dose accumulata in Gy
-for x = 1:grid_size(1)
-    for y = 1:grid_size(2)
-        for z = 1:grid_size(3)
-            materiale = material_grid(x, y, z);  % Ottiene il materiale per il voxel attuale
-            densita = densita_materiale(materiale);  % Densità del materiale
-            % Conversione della dose da MeV/cm³ a Gy
-            dose_in_Gy_grid(x, y, z) = dose_grid(x, y, z) * MeV_to_J / (densita * 1e6);  % 1e6 per cm³ -> m³
+% Inizializza la griglia per la dose in unità di Gray (stessa dimensione della griglia voxel)
+dose_in_Gy_grid = zeros(size(dose_grid));
+
+% Itera attraverso la griglia voxel e converte la dose accumulata in Gy
+for x = 1:size(dose_grid, 1)
+    for y = 1:size(dose_grid, 2)
+        for z = 1:size(dose_grid, 3)
+            materiale_id = material_grid(x, y, z);  % Ottiene l'ID del materiale per il voxel attuale
+            densita = materiali(materiale_id).densita;  % Ottiene la densità del materiale dalla struttura dei materiali
+            % Conversione della dose da MeV a Gray (Gy) usando la densità e il volume del voxel
+            dose_in_Gy_grid(x, y, z) = dose_grid(x, y, z) * MeV_to_J / (densita * voxel_volume);  % Gy = J/kg
         end
     end
 end
@@ -326,7 +370,7 @@ visualizza_dose_interattiva(dose_in_Gy_grid, 'Gy');
 
 %% Calcolo della dose totale e della dose media
 dose_totale = sum(dose_grid(:));  % Dose totale in MeV
-volume_totale = prod(grid_size) * voxel_size^3;  % Volume totale in cm^3
+volume_totale = prod(grid_size) * voxel_size;  % Volume totale in cm^3
 dose_media_MeV_cm3 = dose_totale / volume_totale;  % Dose media in MeV/cm^3
 
 % Calcolo della densità media del volume
