@@ -1,16 +1,21 @@
+clear; clc; 
+% close all;
 % Ottieni il percorso della cartella principale
 mainFolder = pwd;
 % Aggiungi tutte le sottocartelle al percorso
 addpath(genpath(mainFolder));
 
-%% Definizione dei tipi di radiazione
+fprintf('[%s] Avvio del programma...\n', datestr(now, 'HH:MM:SS'));
+
+%% Definizione dei tipi di radiazione (rimane invariata)
+disp('Definizione dei tipi di radiazione...');
 tipi_radiazione = {'fotone', 'elettrone', 'neutrone'};
-% Proprietà dei tipi di radiazione
+
 radiazione(1).nome = 'fotone';
 radiazione(1).massa = 0;  % in MeV/c^2
 radiazione(1).carica = 0;
 radiazione(1).interazioni = {'fotoelettrico', 'compton', 'pair_production'};
- 
+
 radiazione(2).nome = 'elettrone';
 radiazione(2).massa = 0.511;  % in MeV/c^2
 radiazione(2).carica = -1;
@@ -21,51 +26,72 @@ radiazione(3).massa = 939.565;  % in MeV/c^2
 radiazione(3).carica = 0;
 radiazione(3).interazioni = {'scattering_elastico', 'cattura'};
 
-%% Parametri del volume
-% Esempio di utilizzo della funzione
-[material_grid, griglia_voxel, info_dicom, materiale_mappa, materiali] = genera_griglia_materiale('path_to_dicom_folder', materiali);
+%% Percorso DICOM
+fprintf('[%s] Lettura delle immagini DICOM...\n', datestr(now, 'HH:MM:SS'));
+dicomFolder = 'C:\Users\nicop\OneDrive\Desktop\Lattice Patient\Immagini\212-22\CT';
 
-% Visualizza la mappa degli ID materiali e i loro nomi
-disp(materiale_mappa);
+%% Creazione dell'oggetto MaterialMapper
+disp('Creazione dell\''oggetto MaterialMapper...');
+mapper = MaterialMapper(dicomFolder);
 
-% Visualizza i materiali aggiornati
-disp(materiali);
+% Carica i materiali e la mappatura HU→Materiale
+fprintf('[%s] Caricamento dei materiali...\n', datestr(now, 'HH:MM:SS'));
+mapper = mapper.caricaMateriali();
 
-% Griglia 3D per il deposito della dose con dimensioni basate sulla griglia voxel reale
-dose_grid = zeros(size(griglia_voxel));  % Stessa dimensione della griglia voxel DICOM
+fprintf('[%s] Caricamento della mappatura HU...\n', datestr(now, 'HH:MM:SS'));
+mapper = mapper.caricaMappatura();
 
-% Dimensioni del voxel (in cm) basate sui metadati DICOM
-voxel_size_x = info_dicom.PixelSpacing(1);  % Dimensione del voxel in X (cm)
-voxel_size_y = info_dicom.PixelSpacing(2);  % Dimensione del voxel in Y (cm)
-voxel_size_z = info_dicom.SliceThickness;   % Spessore del voxel in Z (cm)
+% Crea la griglia dei materiali
+fprintf('[%s] Creazione della griglia dei materiali...\n', datestr(now, 'HH:MM:SS'));
+mapper = mapper.creaGrigliaMateriali();
 
-% Volume del voxel in cm³
+% Visualizza la griglia materiali in modo interattivo
+disp('Visualizzazione della griglia materiali...');
+mapper.visualizza();
+mapper.visualizzaCT();
+%% Ottenere dati necessari per la simulazione
+disp('Ottenimento dei dati per la simulazione...');
+material_grid = mapper.MaterialGrid;
+materiali = mapper.Materiali;
+volume = mapper.Volume;
+
+% Da volume.InfoDICOM otteniamo info sul voxel
+info_dicom = volume.InfoDICOM;
+voxel_size_x = info_dicom.PixelSpacing(1);
+voxel_size_y = info_dicom.PixelSpacing(2);
+voxel_size_z = info_dicom.SliceThickness;
 voxel_size = voxel_size_x * voxel_size_y * voxel_size_z;
-%% Sorgente ed energia
 
-posizione_centro = round(grid_size / 2);  % Centro della griglia per esempio
-raggio_sorgente = 5;  % Raggio della sfera di concentrazione in cm
-num_particelle = 10;  % Numero di particelle da simulare
-tipo_radionuclide = 'Iodio-131';  % Radionuclide selezionato
+% Crea una dose_grid vuota
+dose_grid = zeros(volume.Dimension);
 
-% Definizione della sorgente utilizzando la nuova funzione
-sorgente = definisci_sorgente_radionuclide(tipo_radionuclide, posizione_centro, raggio_sorgente, num_particelle);
+%% Definizione della Sorgente
+disp('Definizione della sorgente...');
+num_particelle = 100000;
+tipo_radionuclide = 'Iodio-131';
 
-%% Parametri per diversi materiali (ad esempio: aria, tessuto, osso)
-materiali(1).nome = 'aria';
-materiali(1).densita = 0.0012;  % g/cm³
-materiali(1).energia_legame = 0.000;  % Energia di legame (in MeV)
+posizione_centro = round(volume.Dimension / 2);  % Centro del volume
+raggio_sorgente = 5; % cm
+geometry_type = 'sfera';
+geometry_params.posizione_centro = posizione_centro;
+geometry_params.raggio = raggio_sorgente;
 
-materiali(2).nome = 'tessuto';
-materiali(2).densita = 1.0;  % g/cm³
-materiali(2).energia_legame = 0.000532;  % Energia di legame (in MeV)
+% Aggiunta attività iniziale (esempio: 1 MBq)
+attivita_iniziale = 1e6; % Bq
 
-materiali(3).nome = 'osso';
-materiali(3).densita = 1.85;  % g/cm³
-materiali(3).energia_legame = 0.00404;  % Energia di legame (in MeV)
+% Crea l'oggetto SourceGenerator
+fprintf('[%s] Creazione della sorgente...\n', datestr(now, 'HH:MM:SS'));
+sourceGen = SourceGenerator(tipo_radionuclide, num_particelle, volume, material_grid, materiali, geometry_type, geometry_params, attivita_iniziale);
 
-% Griglia che definisce il materiale in ogni voxel (esempio semplificato)
-material_grid = randi([1,3], grid_size);  % Genera un materiale casuale (1=aria, 2=tessuto, 3=osso)
+% Definisci la sorgente
+sorgente = sourceGen.defineSource();
+
+% Visualizza lo spettro completo
+disp('Visualizzazione dello spettro della sorgente...');
+sourceGen.visualizzaSpettroCompleto(sorgente);
+
+fprintf('[%s] Processo completato con successo. Inizio Simulazione MC...\n', datestr(now, 'HH:MM:SS'));
+
 %% Scarica i dati relativi ai coefficienti di assorbimento
 
 dati = readtable('data_osso.txt');
