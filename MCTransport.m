@@ -93,13 +93,21 @@ sourceGen.visualizzaSpettroCompleto(sorgente);
 fprintf('[%s] Processo completato con successo. Inizio Simulazione MC...\n', datestr(now, 'HH:MM:SS'));
 
 %% Scarica i dati relativi ai coefficienti di assorbimento
+fprintf('[%s] Caricamento dei materiali da file Excel...\n', datestr(now, 'HH:MM:SS'));
 
-dati = readtable('data_osso.txt');
-% Estrai le colonne di energia e coefficienti di attenuazione
-energia_tab = dati{:,1};  % Energia in MeV
-mu_fotoelettrico_tab = dati{:,2};  % Coefficiente fotoelettrico
-mu_compton_tab = dati{:,3};  % Coefficiente Compton
-mu_pair_production_tab = dati{:,4};  % Coefficiente di produzione di coppie
+% Percorso del file Excel con i coefficienti
+material_filepath = 'Data/coefficienti_attenuazione_materiali_energie.xlsx';
+
+% Usa MaterialMapper per caricare i materiali fisici
+mapper.caricaMaterialPhysics(material_filepath);
+
+% Verifica se il caricamento è andato a buon fine
+if isempty(mapper.Materiali)
+    error('Errore: Nessun materiale caricato dal file Excel.');
+end
+
+fprintf('[%s] Materiali caricati correttamente.\n', datestr(now, 'HH:MM:SS'));
+
 
 %% Simulazione principale
 parfor i = 1:num_particelle

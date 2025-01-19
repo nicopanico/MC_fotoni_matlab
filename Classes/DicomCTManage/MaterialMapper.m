@@ -42,6 +42,18 @@ classdef MaterialMapper
             fprintf('Visualizzazione della CT in corso...\n');
             visualizzaCT(obj.Volume.VoxelGridHU);
         end
+
+        function obj = caricaMaterialPhysics(obj, filepath)
+            fprintf('[%s] Caricamento delle cross sections da Excel...\n', datestr(now, 'HH:MM:SS'));
+
+            % Ottieni i materiali di base
+            materiali_base = Material.definisciTuttiMateriali();
+
+            % Carica le cross sections
+            obj.Materiali = MaterialPhysics.caricaMaterialiDaFile(filepath, materiali_base);
+
+            fprintf('[%s] Cross sections caricate con successo.\n', datestr(now, 'HH:MM:SS'));
+        end
     end
 end
 
